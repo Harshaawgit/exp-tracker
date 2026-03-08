@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Expense Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path d="M4 14C4 8.477 8.477 4 14 4s10 4.477 10 10-4.477 10-10 10S4 19.523 4 14z" fill="var(--primary)"/>
+          <path d="M14 9v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="2" fill="white"/>
+        </svg>
+        <span class="logo-text">Expense Tracker</span>
+      </div>
+      <button class="sidebar-close" id="sidebarClose"><i data-lucide="x"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" data-page="dashboard"><i data-lucide="home"></i> Dashboard</button>
+      <button class="nav-btn" data-page="analytics"><i data-lucide="bar-chart-2"></i> Analytics</button>
+      <button class="nav-btn" data-page="category"><i data-lucide="pie-chart"></i> Category Spending</button>
+      <button class="nav-btn" data-page="expenses"><i data-lucide="list"></i> Expenses List</button>
+    </nav>
+  </aside>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i data-lucide="menu"></i></button>
+      <div class="logo logo-header">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path d="M4 14C4 8.477 8.477 4 14 4s10 4.477 10 10-4.477 10-10 10S4 19.523 4 14z" fill="var(--primary)"/>
+          <path d="M14 9v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="2" fill="white"/>
+        </svg>
+        <span class="logo-text">Smart Expense Tracker</span>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="search-bar">
+        <i data-lucide="search" class="search-icon"></i>
+        <input type="text" id="globalSearch" placeholder="Search expenses..." />
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-primary" id="headerAddBtn">
+        <i data-lucide="plus"></i> Add Expense
+      </button>
+      <button class="icon-btn" id="profileBtn" title="Profile">
+        <i data-lucide="user-circle"></i>
+      </button>
+      <button class="icon-btn theme-toggle" id="themeToggle" title="Toggle theme">
+        <i data-lucide="sun" class="sun-icon"></i>
+        <i data-lucide="moon" class="moon-icon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== BALANCE MODAL ===== -->
+  <div class="modal-overlay" id="balanceModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Set Your Total Balance</h3>
+        <button class="icon-btn" id="closeBalanceModal" style="display:none;"><i data-lucide="x"></i></button>
+      </div>
+      <form id="balanceForm" class="expense-form">
+        <div class="form-group">
+          <label>Enter your total balance ($)</label>
+          <input type="number" id="balanceInput" placeholder="0.00" min="0" step="0.01" required />
+        </div>
+        <button type="submit" class="btn-primary btn-full">Set Balance</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-container" id="mainContainer">
+
+    <!-- Dashboard Page -->
+    <div class="page-content" id="dashboardPage">
+    <!-- Summary Cards Row -->
+    <section class="summary-cards">
+      <div class="card summary-card balance-card">
+        <div class="card-label">Total Balance</div>
+        <div class="card-value" id="totalBalance">$0.00</div>
+        <div class="card-badge positive"><i data-lucide="trending-up"></i></div>
+      </div>
+      <div class="card summary-card expense-card">
+        <div class="card-label">Total Expenses</div>
+        <div class="card-value" id="totalExpenses">$0.00</div>
+        <div class="card-badge negative"><i data-lucide="trending-down"></i></div>
+      </div>
+      <div class="card summary-card monthly-card">
+        <div class="card-label">Monthly Spending</div>
+        <div class="monthly-chart-wrap">
+          <canvas id="monthlyMiniChart"></canvas>
+        </div>
+        <div class="card-value-small" id="monthlyAmount">$0.00 <span>this month</span></div>
+      </div>
+    </section>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+
+      <!-- LEFT: Quick Add Expense -->
+      <aside class="card quick-add-card">
+        <h3 class="section-title">Quick Add Expense</h3>
+        <form id="expenseForm" class="expense-form" autocomplete="off">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="expTitle" placeholder="e.g. Coffee, Groceries" required />
+          </div>
+          <div class="form-group">
+            <label>Amount ($)</label>
+            <input type="number" id="expAmount" placeholder="0.00" min="0.01" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <div class="select-wrap">
+              <select id="expCategory">
+                <option value="Food">🍔 Food</option>
+                <option value="Travel">✈️ Travel</option>
+                <option value="Shopping">🛍️ Shopping</option>
+                <option value="Bills">💡 Bills</option>
+                <option value="Others">📦 Others</option>
+              </select>
+              <i data-lucide="chevron-down"></i>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <div class="input-icon-wrap">
+              <input type="date" id="expDate" required />
+              <i data-lucide="calendar"></i>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-full" id="submitBtn">
+            <i data-lucide="plus-circle"></i> Add Expense
+          </button>
+        </form>
+      </aside>
+
+    </div><!-- /dashboard-grid -->
+    </div><!-- /dashboardPage -->
+
+    <!-- Analytics Page -->
+    <div class="page-content" id="analyticsPage" style="display:none;">
+      <section class="card analytics-card analytics-full">
+        <div class="analytics-header">
+          <div>
+            <h1 class="section-title">Analytics</h1>
+            <p class="sub-label">Monthly Expenses</p>
+          </div>
+          <div class="stat-pills">
+            <div class="stat-pill">
+              <span class="pill-label">Top Spending</span>
+              <span class="pill-value" id="topCategory">—</span>
+              <span class="pill-amount" id="topAmount">$0</span>
+            </div>
+            <div class="stat-pill">
+              <span class="pill-label">Most Frequent</span>
+              <span class="pill-value" id="mostFrequent">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="barChart"></canvas>
+        </div>
+      </section>
+    </div><!-- /analyticsPage -->
+
+    <!-- Category Spending Page -->
+    <div class="page-content" id="categoryPage" style="display:none;">
+      <section class="card category-card category-full">
+        <h3 class="section-title">Category Spending</h3>
+        <div class="donut-wrap">
+          <canvas id="donutChart"></canvas>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </section>
+    </div><!-- /categoryPage -->
+
+    <!-- Expenses List Page -->
+    <div class="page-content" id="expensesPage" style="display:none;">
+    <section class="card expense-list-card">
+      <div class="list-header">
+        <h1 class="section-title">Expense List &amp; Filters</h1>
+        <div class="list-search">
+          <i data-lucide="search"></i>
+          <input type="text" id="listSearch" placeholder="Search..." />
+        </div>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="All">All</button>
+        <button class="filter-btn" data-filter="Food">🍔 Food</button>
+        <button class="filter-btn" data-filter="Travel">✈️ Travel</button>
+        <button class="filter-btn" data-filter="Shopping">🛍️ Shopping</button>
+        <button class="filter-btn" data-filter="Bills">💡 Bills</button>
+        <button class="filter-btn" data-filter="Others">📦 Others</button>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="table-wrap" id="tableWrap">
+        <table class="expense-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="expenseTableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState">
+          <i data-lucide="inbox"></i>
+          <p>No expenses yet. Add your first one!</p>
+        </div>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="mobile-cards" id="mobileCards"></div>
+    </section>
+    </div><!-- /expensesPage -->
+
+  </main>
+
+  <!-- Floating Add Button (mobile) -->
+  <button class="fab" id="fabBtn" title="Add Expense">
+    <i data-lucide="plus"></i>
+  </button>
+
+  <!-- ===== EDIT MODAL ===== -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Expense</h3>
+        <button class="icon-btn" id="closeModal"><i data-lucide="x"></i></button>
+      </div>
+      <form id="editForm" class="expense-form">
+        <input type="hidden" id="editId" />
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="editTitle" required />
+        </div>
+        <div class="form-group">
+          <label>Amount ($)</label>
+          <input type="number" id="editAmount" min="0.01" step="0.01" required />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <div class="select-wrap">
+            <select id="editCategory">
+              <option value="Food">🍔 Food</option>
+              <option value="Travel">✈️ Travel</option>
+              <option value="Shopping">🛍️ Shopping</option>
+              <option value="Bills">💡 Bills</option>
+              <option value="Others">📦 Others</option>
+            </select>
+            <i data-lucide="chevron-down"></i>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <div class="input-icon-wrap">
+            <input type="date" id="editDate" required />
+            <i data-lucide="calendar"></i>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-outline" id="cancelEdit">Cancel</button>
+          <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
